@@ -1,3 +1,4 @@
+from hashlib import md5
 from app import login
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
@@ -16,6 +17,9 @@ class User(UserMixin, db.Model):
                                              unique=True)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
 
+    about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
+    last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
+
     def set_password_hash(self, password):
        self.password_hash = generate_password_hash(password)
 
@@ -23,6 +27,10 @@ class User(UserMixin, db.Model):
        return check_password_hash(self.password_hash, password)
 
     posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author')
+
+    def avatar(self, size):
+       digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+       return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
